@@ -31,23 +31,13 @@ venv/
 env/
 ENV/
 
-# Jupyter Notebook
-.ipynb_checkpoints
 
 # Environment variables
 .env
 
-# Application specific data
-data/
-*.csv
 
-# Machine Learning Models
-models/
-*.pkl
-*.keras
-*.h5
-*.hdf5
-*.joblib
+
+
 
 # IDEs and Editors
 .vscode/
