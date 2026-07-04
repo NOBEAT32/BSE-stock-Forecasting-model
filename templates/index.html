@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BSE Stock Forecasting Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-filler@2.0.0/dist/chartjs-plugin-filler.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="nav-icon">▲</span>
+            <span class="nav-title">StockSense <span class="nav-sub">BSE Forecasting</span></span>
+        </div>
+        <div class="nav-right">
+            <span class="nav-badge">RELIANCE.NS</span>
+            <span class="nav-date">Last updated: {{ stats.last_updated }}</span>
+        </div>
+    </nav>
+
+    <!-- ========== HERO ========== -->
+    <section class="hero">
+        <div class="hero-text">
+            <p class="hero-eyebrow">ML-Powered · 5 Models · 10 Years of Data</p>
+            <h1 class="hero-title">BSE Stock Market<br><span class="hero-accent">Forecasting Engine</span></h1>
+            <p class="hero-desc">Comparing ARIMA, SARIMA, Prophet, XGBoost and LSTM on Reliance Industries — finding the
+                best model for price accuracy and directional prediction.</p>
+        </div>
+        <div class="hero-price-card">
+            <p class="hpc-label">Current Price</p>
+            <p class="hpc-price">₹{{ stats.current_price }}</p>
+            <p class="hpc-change {% if stats.price_change >= 0 %}positive{% else %}negative{% endif %}">
+                {% if stats.price_change >= 0 %}▲{% else %}▼{% endif %}
+                ₹{{ stats.price_change | abs }} ({{ stats.price_change_pct | abs }}%)
+            </p>
+            <div class="hpc-divider"></div>
+            <div class="hpc-row">
+                <span>52W High</span><span class="mono">₹{{ stats.yearly_high }}</span>
+            </div>
+            <div class="hpc-row">
+                <span>52W Low</span><span class="mono">₹{{ stats.yearly_low }}</span>
+            </div>
+            <div class="hpc-row">
+                <span>Data Points</span><span class="mono">{{ stats.data_points }}</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== STAT CARDS ========== -->
+    <section class="cards-section">
+        <div class="cards-grid">
+            {% set card_data = [
+            ('Prophet', 'Best Price Accuracy', '3.95%', 'MAPE', '#a78bfa'),
+            ('XGBoost', 'Best Direction', '71.19%', 'Dir. Accuracy', '#34d399'),
+            ('LSTM', 'Best All-Rounder', '7.37%', 'MAPE', '#60a5fa'),
+            ('5 Models', 'Tested & Compared', '10 Yrs', 'Training Data', '#f472b6'),
+            ] %}
+            {% for model, label, val, metric, color in card_data %}
+            <div class="stat-card" style="--accent: {{ color }}">
+                <p class="sc-label">{{ label }}</p>
+                <p class="sc-model">{{ model }}</p>
+                <p class="sc-val">{{ val }}</p>
+                <p class="sc-metric">{{ metric }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ========== HISTORICAL PRICE CHART ========== -->
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <p class="section-eye">Price History</p>
+                <h2 class="section-title">Historical Closing Price</h2>
+            </div>
+            <div class="period-btns">
+                <button class="period-btn active" data-period="1M">1M</button>
+                <button class="period-btn" data-period="3M">3M</button>
+                <button class="period-btn" data-period="6M">6M</button>
+                <button class="period-btn active-default" data-period="1Y">1Y</button>
+                <button class="period-btn" data-period="3Y">3Y</button>
+                <button class="period-btn" data-period="ALL">ALL</button>
+            </div>
+        </div>
+        <div class="chart-box">
+            <canvas id="historicalChart"></canvas>
+            <div class="chart-loader" id="histLoader">Loading...</div>
+        </div>
+    </section>
+
+    <!-- ========== MODEL COMPARISON ========== -->
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <p class="section-eye">Evaluation</p>
+                <h2 class="section-title">Model Performance Comparison</h2>
+            </div>
+        </div>
+        <div class="metrics-grid">
+            <div class="chart-box half"><canvas id="rmseChart"></canvas></div>
+            <div class="chart-box half"><canvas id="mapeChart"></canvas></div>
+            <div class="chart-box half"><canvas id="maeChart"></canvas></div>
+            <div class="chart-box half"><canvas id="dirChart"></canvas></div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="table-wrap">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>RMSE ↓</th>
+                        <th>MAE ↓</th>
+                        <th>MAPE % ↓</th>
+                        <th>Dir. Accuracy % ↑</th>
+                        <th>Verdict</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in results %}
+                    <tr>
+                        <td><span class="model-badge">{{ row.Model }}</span></td>
+                        <td class="mono {% if row.RMSE == results|map(attribute='RMSE')|min %}best{% endif %}">
+                            {{ row.RMSE }}
+                        </td>
+                        <td class="mono {% if row.MAE == results|map(attribute='MAE')|min %}best{% endif %}">
+                            {{ row.MAE }}
+                        </td>
+                        <td class="mono {% if row.MAPE == results|map(attribute='MAPE')|min %}best{% endif %}">
+                            {{ row.MAPE }}%
+                        </td>
+                        <td
+                            class="mono {% if row.Directional_Acc == results|map(attribute='Directional_Acc')|max %}best{% endif %}">
+                            {% if row.Directional_Acc %}{{ row.Directional_Acc }}%{% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if row.Model == 'Prophet' %}<span class="verdict-tag v-green">Best Price</span>
+                            {% elif row.Model == 'XGBoost' %}<span class="verdict-tag v-blue">Best Direction</span>
+                            {% elif row.Model == 'LSTM' %}<span class="verdict-tag v-purple">All-Rounder</span>
+                            {% else %}<span class="verdict-tag v-gray">Baseline</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ========== FORECAST SECTION ========== -->
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <p class="section-eye">Predictions</p>
+                <h2 class="section-title">Model Forecasts</h2>
+            </div>
+            <div class="model-tabs">
+                <button class="tab-btn active" data-tab="prophet">Prophet</button>
+                <button class="tab-btn" data-tab="lstm">LSTM</button>
+                <button class="tab-btn" data-tab="xgboost">XGBoost</button>
+            </div>
+        </div>
+
+        <div class="chart-box" id="forecastChartBox">
+            <canvas id="forecastChart"></canvas>
+            <div class="chart-loader" id="forecastLoader">Loading forecast...</div>
+        </div>
+
+        <!-- Prophet horizon selector -->
+        <div class="horizon-row" id="prophetControls">
+            <span class="horizon-label">Forecast Horizon:</span>
+            <button class="horizon-btn active" data-days="15">15 Days</button>
+            <button class="horizon-btn" data-days="30">30 Days</button>
+            <button class="horizon-btn" data-days="60">60 Days</button>
+            <button class="horizon-btn" data-days="90">90 Days</button>
+        </div>
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="footer">
+        <p class="footer-title">BSE Stock Forecasting · RELIANCE.NS · 2015–2024</p>
+        <p class="footer-sub">Built with Python · Flask · Prophet · XGBoost · LSTM · Chart.js</p>
+        <p class="footer-disclaimer">⚠ For educational purposes only. Not financial advice.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+
+</html>
