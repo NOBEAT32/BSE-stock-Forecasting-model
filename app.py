@@ -36,10 +36,14 @@ print("All models loaded.")
 # =========================================================
 def load_data():
     df = pd.read_csv('data/bse_stock_features.csv', parse_dates=['Date'], index_col='Date')
+    if df.index.tz is not None:
+        df.index = df.index.tz_localize(None)
     return df.asfreq('B').ffill()
 
 def load_anomaly_data():
     df = pd.read_csv('data/bse_stock_anomaly.csv', parse_dates=['Date'], index_col='Date')
+    if df.index.tz is not None:
+        df.index = df.index.tz_localize(None)
     return df.asfreq('B').ffill()
 
 # =========================================================
@@ -203,6 +207,12 @@ def api_predictions_xgboost():
     TEST_SIZE = 60
     df        = load_data()
 
+    if 'Close_diff1' not in df.columns:
+        df['Close_diff1'] = df['close'].diff()
+    if 'Log_Return' not in df.columns:
+        import numpy as np
+        df['Log_Return'] = np.log(df['close'] / df['close'].shift(1))
+
     DROP_COLS    = ['Target_NextClose', 'Target_Direction', 'Trend', 'Seasonal',
                     'Residual', 'Anomaly_zscore', 'Anomaly_residual',
                     'Anomaly_isoforest', 'Return_zscore', 'close']
@@ -212,6 +222,8 @@ def api_predictions_xgboost():
     y      = df.loc[X.index, 'close']
     X_test = X.iloc[-TEST_SIZE:]
     y_test = y.iloc[-TEST_SIZE:]
+
+    X_test = X_test[xgb_scaler.feature_names_in_]
 
     y_pred = xgb_model.predict(xgb_scaler.transform(X_test))
 
