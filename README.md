@@ -3,7 +3,8 @@
   <img width="1507" height="791" alt="image" src="https://github.com/user-attachments/assets/4b8844a4-7492-4ebd-857a-0262d5df8707" />
   <img width="1478" height="791" alt="image" src="https://github.com/user-attachments/assets/9d9b6f5b-fec7-48d6-b7b2-46d8a6cf2d49" />
   <img width="1497" height="480" alt="image" src="https://github.com/user-attachments/assets/b69b0936-60e2-4164-a7db-a5f21691367a" />
-  #..
+  <img width="1512" height="627" alt="image" src="https://github.com/user-attachments/assets/f910d283-c877-4715-b350-bc743cc74dd4" />
+
   #..
 
 > An end-to-end machine learning pipeline that forecasts BSE stock prices using 5 models — ARIMA, SARIMA, Prophet, XGBoost, and LSTM — served through an interactive Flask web dashboard.
